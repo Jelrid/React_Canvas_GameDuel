@@ -22,6 +22,51 @@ const GameCanvas = () => {
         //Персонажи
         let hero1 = { x: 50, y: 200, dx: 5, dy: 5 };
         let hero2 = { x: canvas.width - 50, y: 200, dx: -5, dy: -5 };
+        
+        
+        // Пули
+        class Bullet {
+            constructor(x, y, targetX, targetY, speed) {
+                this.x = x;
+                this.y = y;
+                this.targetX = targetX;
+                this.targetY = targetY;
+                this.speed = speed;
+                this.calculateDirection();
+            }
+        //Расчет траектории
+            calculateDirection() {
+                const dx = this.targetX - this.x;
+                const dy = this.targetY - this.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                this.dx = dx / distance * this.speed;
+                this.dy = dy / distance * this.speed;
+            }
+        
+            update() {
+                this.x += this.dx;
+                this.y += this.dy;
+            }
+        
+            draw(ctx) {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, 5, 0, Math.PI * 2);
+                ctx.fillStyle = '#66ff00';
+                ctx.fill();
+                ctx.closePath();
+            }
+        }
+        let bullets = [];
+        
+        function shoot(startX, startY, endX, endY, speed) {
+            bullets.push(new Bullet(startX, startY, endX, endY, speed));
+        }
+
+        setInterval(() => {
+            shoot(hero1.x, hero1.y, canvas.width, hero1.y, 10); // Выстрел от hero1 к правому краю
+            shoot(hero2.x, hero2.y, 0, hero2.y, 10); // Выстрел от hero2 к левому краю
+        }, 2000);
+        
 
         function draw() {
             //Отрисовка с удалением прошлого состояня
@@ -50,6 +95,14 @@ const GameCanvas = () => {
             // Проверка столкновений и изменение направления
             if (hero1.y + 20 > canvas.height || hero1.y - 20 < 0) hero1.dy *= -1;
             if (hero2.y + 20 > canvas.height || hero2.y - 20 < 0) hero2.dy *= -1;
+
+            bullets.forEach((bullet) => {
+                bullet.update();
+                bullet.draw(ctx);
+            });
+        
+            // Удаление пуль, которые вышли за пределы холста
+            bullets = bullets.filter(bullet => bullet.x > 0 && bullet.x < canvas.width && bullet.y > 0 && bullet.y < canvas.height);
             requestAnimationFrame(draw);
         }
 
