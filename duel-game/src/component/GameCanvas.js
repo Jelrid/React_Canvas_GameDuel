@@ -6,6 +6,9 @@ const GameCanvas = () => {
     useEffect(() => {
         const canvas = canvasRef.current;
         const ctx = canvas.getContext('2d');
+        let cursorPosition = { x: 0, y: 0 };
+        
+        
 
         // размер холста на 100% окна
         canvas.width = window.innerWidth;
@@ -18,7 +21,8 @@ const GameCanvas = () => {
             const scaleBack = Math.min(canvas.width / background.width, canvas.height / background.height);
             const dx = (canvas.width - background.width * scaleBack) / 2;
             const dy = (canvas.height - background.height * scaleBack) / 2;
-
+           
+            //Общие сведения о персонажах
             class Character {
                 constructor(x, y, dx, dy) {
                     this.x = x;
@@ -38,10 +42,12 @@ const GameCanvas = () => {
                 }
             }
 
+            //Уникальность каждого героя
             class Hero extends Character {
                 constructor(x, y, dx, dy, color) {
                     super(x, y, dx, dy);
                     this.color = color;
+                    this.radius = 20;
                 }
 
                 draw(ctx) {
@@ -62,12 +68,19 @@ const GameCanvas = () => {
             function updateCharacters() {
                 characters.forEach(character => {
                     character.move();
-                    if (character.y + 20 > canvas.height) character.dy *= -1; // Отскок от нижнего края
-                    if (character.y - 20 < 0) character.dy *= -1; // Отскок от верхнего края
+                    if (Math.abs(character.x - cursorPosition.x) < character.radius &&
+                        Math.abs(character.y - cursorPosition.y) < character.radius) {
+                        // Изменение направления движения от курсора
+                        character.dx *= -1;
+                        character.dy *= -1;
+                    }
+                    // Отскоки от краев
+                    if (character.y + 20 > canvas.height) character.dy *= -1; 
+                    if (character.y - 20 < 0) character.dy *= -1; 
                     character.draw(ctx);
                 });
             }
-            
+
 
             // Пули
             class Bullet {
@@ -79,7 +92,7 @@ const GameCanvas = () => {
                     this.speed = speed;
                     this.calculateDirection();
                 }
-                //Расчет траектории
+                //Расчет траектории пули
                 calculateDirection() {
                     const dx = this.targetX - this.x;
                     const dy = this.targetY - this.y;
@@ -107,14 +120,17 @@ const GameCanvas = () => {
                 bullets.push(new Bullet(startX, startY, endX, endY, speed));
             }
 
+            //Интервал выстрелов
             setInterval(() => {
-                // Используем первого героя для выстрела к правому краю
                 shoot(characters[0].x, characters[0].y, canvas.width, characters[0].y, 10);
-                // Используем второго героя для выстрела к левому краю
                 shoot(characters[1].x, characters[1].y, 0, characters[1].y, 10);
             }, 2000);
 
-
+            //Прослушивание позиции мыши и 
+           canvas.addEventListener('mousemove', handleMouseMove);
+            function handleMouseMove(event) {
+                cursorPosition = { x: event.clientX, y: event.clientY };
+            }
             function draw() {
                 //Отрисовка с удалением прошлого состояня
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -131,8 +147,12 @@ const GameCanvas = () => {
 
                 requestAnimationFrame(draw);
             }
-
             draw();
+            return () => {
+                //Очищение состояния в canvas
+                canvas.removeEventListener('mousemove', handleMouseMove);
+                cancelAnimationFrame(draw);
+            };
         }
     }, []);
 
